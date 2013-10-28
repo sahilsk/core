@@ -1,7 +1,18 @@
+/*
+ * Copyright (c) 2014
+ *
+ * This file is licensed under the Affero General Public License version 3
+ * or later.
+ *
+ * See the COPYING-README file.
+ *
+ */
+
+/* global OC, Files, FileActions */
 $(document).ready(function() {
 
-	var disableSharing = $('#disableSharing').data('status'),
-		sharesLoaded = false;
+	var sharesLoaded = false;
+	var disableSharing = (parseInt($('#permissions').val()) & OC.PERMISSION_SHARE) === 0;
 
 	if (typeof OC.Share !== 'undefined' && typeof FileActions !== 'undefined'  && !disableSharing) {
 		$('#fileList').on('fileActionsReady',function(){
@@ -46,4 +57,5 @@ $(document).ready(function() {
 			}
 		});
 	}
+
 });

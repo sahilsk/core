@@ -4,7 +4,11 @@ OCP\JSON::checkLoggedIn();
 OCP\JSON::callCheck();
 
 $files = $_POST['files'];
-$dirlisting = $_POST['dirlisting'];
+$dir = '/';
+if (isset($_POST['dir'])) {
+	$dir = $_POST['dir'];
+}
+$dir = rtrim($dir, '/') . '/';
 $list = json_decode($files);
 
 $error = array();
@@ -12,7 +16,8 @@ $success = array();
 
 $i = 0;
 foreach ($list as $file) {
-	if ( $dirlisting === '0') {
+	$path = $dir . '/' . $file;
+	if ($dir === '/') {
 		$file = ltrim($file, '/');
 		$delimiter = strrpos($file, '.d');
 		$filename = substr($file, 0, $delimiter);
@@ -23,7 +28,7 @@ foreach ($list as $file) {
 		$timestamp = null;
 	}
 
-	if ( !OCA\Files_Trashbin\Trashbin::restore($file, $filename, $timestamp) ) {
+	if ( !OCA\Files_Trashbin\Trashbin::restore($path, $filename, $timestamp) ) {
 		$error[] = $filename;
 		OC_Log::write('trashbin','can\'t restore ' . $filename, OC_Log::ERROR);
 	} else {
