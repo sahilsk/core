@@ -158,77 +158,30 @@ var Files = {
 		});
 	},
 
-	lastWidth: 0,
-
-	initBreadCrumbs: function () {
-		var $controls = $('#controls');
-
-		Files.lastWidth = 0;
-		Files.breadcrumbs = [];
-
-		// initialize with some extra space
-		Files.breadcrumbsWidth = 64;
-		if ( document.getElementById("navigation") ) {
-			Files.breadcrumbsWidth += $('#navigation').get(0).offsetWidth;
-		}
-		Files.hiddenBreadcrumbs = 0;
-
-		$.each($('.crumb'), function(index, breadcrumb) {
-			Files.breadcrumbs[index] = breadcrumb;
-			Files.breadcrumbsWidth += $(breadcrumb).get(0).offsetWidth;
-		});
-
-		$.each($('#controls .actions>div'), function(index, action) {
-			Files.breadcrumbsWidth += $(action).get(0).offsetWidth;
-		});
-
-		// event handlers for breadcrumb items
-		$controls.find('.crumb a').on('click', onClickBreadcrumb);
-
-		// setup drag and drop
-		$controls.find('.crumb:not(.last)').droppable(crumbDropOptions);
+	/**
+	 * Returns the download URL of the given file
+	 * @param filename file name of the file
+	 * @param dir optional directory in which the file name is, defaults to the current directory
+	 */
+	getDownloadUrl: function(filename, dir) {
+		var params = {
+			dir: dir || FileList.getCurrentDirectory(),
+			files: filename
+		};
+		return this.getAjaxUrl('download', params);
 	},
 
-	resizeBreadcrumbs: function (width, firstRun) {
-		if (width !== Files.lastWidth) {
-			if ((width < Files.lastWidth || firstRun) && width < Files.breadcrumbsWidth) {
-				if (Files.hiddenBreadcrumbs === 0) {
-					Files.breadcrumbsWidth -= $(Files.breadcrumbs[1]).get(0).offsetWidth;
-					$(Files.breadcrumbs[1]).find('a').hide();
-					$(Files.breadcrumbs[1]).append('<span>...</span>');
-					Files.breadcrumbsWidth += $(Files.breadcrumbs[1]).get(0).offsetWidth;
-					Files.hiddenBreadcrumbs = 2;
-				}
-				var i = Files.hiddenBreadcrumbs;
-				while (width < Files.breadcrumbsWidth && i > 1 && i < Files.breadcrumbs.length - 1) {
-					Files.breadcrumbsWidth -= $(Files.breadcrumbs[i]).get(0).offsetWidth;
-					$(Files.breadcrumbs[i]).hide();
-					Files.hiddenBreadcrumbs = i;
-					i++;
-				}
-			} else if (width > Files.lastWidth && Files.hiddenBreadcrumbs > 0) {
-				var i = Files.hiddenBreadcrumbs;
-				while (width > Files.breadcrumbsWidth && i > 0) {
-					if (Files.hiddenBreadcrumbs === 1) {
-						Files.breadcrumbsWidth -= $(Files.breadcrumbs[1]).get(0).offsetWidth;
-						$(Files.breadcrumbs[1]).find('span').remove();
-						$(Files.breadcrumbs[1]).find('a').show();
-						Files.breadcrumbsWidth += $(Files.breadcrumbs[1]).get(0).offsetWidth;
-					} else {
-						$(Files.breadcrumbs[i]).show();
-						Files.breadcrumbsWidth += $(Files.breadcrumbs[i]).get(0).offsetWidth;
-						if (Files.breadcrumbsWidth > width) {
-							Files.breadcrumbsWidth -= $(Files.breadcrumbs[i]).get(0).offsetWidth;
-							$(Files.breadcrumbs[i]).hide();
-							break;
-						}
-					}
-					i--;
-					Files.hiddenBreadcrumbs = i;
-				}
-			}
-			Files.lastWidth = width;
+	/**
+	 * Returns the ajax URL for a given action
+	 * @param action action string
+	 * @param params optional params map
+	 */
+	getAjaxUrl: function(action, params) {
+		var q = '';
+		if (params) {
+			q = '?' + OC.buildQueryString(params);
 		}
+		return OC.filePath('files', 'ajax', action + '.php') + q;
 	}
 };
 $(document).ready(function() {
@@ -239,13 +192,9 @@ $(document).ready(function() {
 	Files.displayEncryptionWarning();
 	Files.bindKeyboardShortcuts(document, jQuery);
 
-	FileList.postProcessList();
 	Files.setupDragAndDrop();
 
 	$('#file_action_panel').attr('activeAction', false);
-
-	// allow dropping on the "files" app icon
-	$('ul#apps li:first-child').data('dir','').droppable(crumbDropOptions);
 
 	// Triggers invisible file input
 	$('#upload a').on('click', function() {
@@ -305,7 +254,7 @@ $(document).ready(function() {
 			var filename=$(this).parent().parent().attr('data-file');
 			var tr = FileList.findFileEl(filename);
 			var renaming=tr.data('renaming');
-			if (!renaming && !FileList.isLoading(filename)) {
+			if (!renaming) {
 				FileActions.currentFile = $(this).parent();
 				var mime=FileActions.getCurrentMimeType();
 				var type=FileActions.getCurrentType();
@@ -393,16 +342,6 @@ $(document).ready(function() {
 
 	//do a background scan if needed
 	scanFiles();
-
-	Files.initBreadCrumbs();
-
-	$(window).resize(function() {
-		var width = $(this).width();
-		Files.resizeBreadcrumbs(width, false);
-	});
-
-	var width = $(this).width();
-	Files.resizeBreadcrumbs(width, true);
 
 	// display storage warnings
 	setTimeout(Files.displayStorageWarnings, 100);
@@ -610,50 +549,6 @@ var folderDropOptions={
 	tolerance: 'pointer'
 };
 
-var crumbDropOptions={
-	drop: function( event, ui ) {
-		var target=$(this).data('dir');
-		var dir = $('#dir').val();
-		while(dir.substr(0,1) === '/') {//remove extra leading /'s
-				dir=dir.substr(1);
-		}
-		dir = '/' + dir;
-		if (dir.substr(-1,1) !== '/') {
-			dir = dir + '/';
-		}
-		if (target === dir || target+'/' === dir) {
-			return;
-		}
-		var files = ui.helper.find('tr');
-		$(files).each(function(i,row) {
-			var dir = $(row).data('dir');
-			var file = $(row).data('filename');
-			//slapdash selector, tracking down our original element that the clone budded off of.
-			var origin = $('tr[data-id=' + $(row).data('origin') + ']');
-			var td = origin.children('td.filename');
-			var oldBackgroundImage = td.css('background-image');
-			td.css('background-image', 'url('+ OC.imagePath('core', 'loading.gif') + ')');
-			$.post(OC.filePath('files', 'ajax', 'move.php'), { dir: dir, file: file, target: target }, function(result) {
-				if (result) {
-					if (result.status === 'success') {
-						FileList.remove(file);
-						procesSelection();
-						$('#notification').hide();
-					} else {
-						$('#notification').hide();
-						$('#notification').text(result.data.message);
-						$('#notification').fadeIn();
-					}
-				} else {
-					OC.dialogs.alert(t('files', 'Error moving file'), t('files', 'Error'));
-				}
-				td.css('background-image', oldBackgroundImage);
-			});
-		});
-	},
-	tolerance: 'pointer'
-};
-
 function procesSelection() {
 	var selected = getSelectedFilesTrash();
 	var selectedFiles = selected.filter(function(el) {
@@ -743,6 +638,15 @@ function getPathForPreview(name) {
 	return path;
 }
 
+/**
+ * Generates a preview URL based on the URL space.
+ * @param urlSpec map with {x: width, y: height, file: file path}
+ * @return preview URL
+ */
+Files.generatePreviewUrl = function(urlSpec) {
+	return OC.Router.generate('core_ajax_preview', urlSpec);
+}
+
 Files.lazyLoadPreview = function(path, mime, ready, width, height, etag) {
 	// get mime icon url
 	Files.getMimeIcon(mime, function(iconURL) {
@@ -772,12 +676,7 @@ Files.lazyLoadPreview = function(path, mime, ready, width, height, etag) {
 			console.warn('Files.lazyLoadPreview(): missing etag argument');
 		}
 
-		if ( $('#isPublic').length ) {
-			urlSpec.t = $('#dirToken').val();
-			previewURL = OC.Router.generate('core_ajax_public_preview', urlSpec);
-		} else {
-			previewURL = OC.Router.generate('core_ajax_preview', urlSpec);
-		}
+		previewURL = Files.generatePreviewUrl(urlSpec);
 		previewURL = previewURL.replace('(', '%28');
 		previewURL = previewURL.replace(')', '%29');
 
@@ -826,14 +725,8 @@ function checkTrashStatus() {
 	});
 }
 
-function onClickBreadcrumb(e) {
-	var $el = $(e.target).closest('.crumb'),
-		$targetDir = $el.data('dir'),
-		isPublic = !!$('#isPublic').val();
-
-	if ($targetDir !== undefined && !isPublic) {
-		e.preventDefault();
-		FileList.changeDirectory(decodeURIComponent($targetDir));
-	}
+// override core's fileDownloadPath (legacy)
+function fileDownloadPath(dir, file) {
+	return Files.getDownloadUrl(file, dir);
 }
 

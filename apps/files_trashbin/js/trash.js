@@ -1,26 +1,56 @@
-
+/* global OC, t, BreadCrumb, FileActions, FileList, Files */
 $(document).ready(function() {
+	var deletedRegExp = new RegExp(/^(.+)\.d[0-9]+$/);
+
+	/**
+	 * Convert a file name in the format filename.d12345 to the real file name.
+	 * This will use basename.
+	 * The name will not be changed if it has no ".d12345" suffix.
+	 * @param name file name
+	 * @return converted file name
+	 */
+	function getDeletedFileName(name) {
+		name = OC.basename(name);
+		var match = deletedRegExp.exec(name);
+		if (match && match.length > 1) {
+			name = match[1];
+		}
+		return name;
+	}
+
+	function isDirListing() {
+		var dir = FileList.getCurrentDirectory();
+		return (dir !== '/' && dir !== '');
+	}
 
 	if (typeof FileActions !== 'undefined') {
 		FileActions.register('all', 'Restore', OC.PERMISSION_READ, OC.imagePath('core', 'actions/history'), function(filename) {
+			var dirListing = isDirListing();
 			var tr = FileList.findFileEl(filename);
 			var deleteAction = tr.children("td.date").children(".action.delete");
+			var dir = FileList.getCurrentDirectory();
 			deleteAction.removeClass('delete-icon').addClass('progress-icon');
 			disableActions();
-			$.post(OC.filePath('files_trashbin', 'ajax', 'undelete.php'),
-					{files: JSON.stringify([$('#dir').val() + '/' + filename]), dirlisting: tr.attr('data-dirlisting')},
-					function(result) {
-						for (var i = 0; i < result.data.success.length; i++) {
-							var row = document.getElementById(result.data.success[i].filename);
-							row.parentNode.removeChild(row);
+			$.post(OC.filePath('files_trashbin', 'ajax', 'undelete.php'), {
+					files: JSON.stringify([dir + '/' + filename]),
+					dirlisting: dirListing ? 1 : 0
+			},
+				function(result) {
+					var name;
+					for (var i = 0; i < result.data.success.length; i++) {
+						name = getDeletedFileName(result.data.success[i].filename);
+						if (!dirListing) {
+							name += '.d' + result.data.success[i].timestamp;
 						}
-						if (result.status !== 'success') {
-							OC.dialogs.alert(result.data.message, t('core', 'Error'));
-						}
-						enableActions();
-						FileList.updateFileSummary();
-						FileList.updateEmptyContent();
+						FileList.remove(name, {updateSummary: false});
 					}
+					if (result.status !== 'success') {
+						OC.dialogs.alert(result.data.message, t('core', 'Error'));
+					}
+					enableActions();
+					FileList.updateFileSummary();
+					FileList.updateEmptyContent();
+				}
 			);
 
 		});
@@ -30,24 +60,32 @@ $(document).ready(function() {
 		return OC.imagePath('core', 'actions/delete');
 	}, function(filename) {
 		$('.tipsy').remove();
+		var dirListing = isDirListing();
 		var tr = FileList.findFileEl(filename);
 		var deleteAction = tr.children("td.date").children(".action.delete");
+		var dir = FileList.getCurrentDirectory();
 		deleteAction.removeClass('delete-icon').addClass('progress-icon');
 		disableActions();
-		$.post(OC.filePath('files_trashbin', 'ajax', 'delete.php'),
-				{files: JSON.stringify([$('#dir').val() + '/' +filename]), dirlisting: tr.attr('data-dirlisting')},
-				function(result) {
-					for (var i = 0; i < result.data.success.length; i++) {
-						var row = document.getElementById(result.data.success[i].filename);
-						row.parentNode.removeChild(row);
+		$.post(OC.filePath('files_trashbin', 'ajax', 'delete.php'), {
+				files: JSON.stringify([dir + '/' + filename]),
+				dirlisting: dirListing ? 1 : 0
+			},
+			function(result) {
+				var name;
+				for (var i = 0; i < result.data.success.length; i++) {
+					name = getDeletedFileName(result.data.success[i].filename);
+					if (!dirListing) {
+						name += '.d' + result.data.success[i].timestamp;
 					}
-					if (result.status !== 'success') {
-						OC.dialogs.alert(result.data.message, t('core', 'Error'));
-					}
-					enableActions();
-					FileList.updateFileSummary();
-					FileList.updateEmptyContent();
+					FileList.remove(name, {updateSummary: false});
 				}
+				if (result.status !== 'success') {
+					OC.dialogs.alert(result.data.message, t('core', 'Error'));
+				}
+				enableActions();
+				FileList.updateFileSummary();
+				FileList.updateEmptyContent();
+			}
 		);
 
 	});
@@ -111,7 +149,7 @@ $(document).ready(function() {
 				files: JSON.stringify(files),
 				dirlisting: getSelectedFiles('dirlisting')[0]
 			};
-		};
+		}
 
 		disableActions();
 		if (allFiles) {
@@ -171,7 +209,7 @@ $(document).ready(function() {
 		var filename = $(this).parent().parent().attr('data-file');
 		var tr = FileList.findFileEl(filename);
 		var renaming = tr.data('renaming');
-		if(!renaming && !FileList.isLoading(filename)){
+		if(!renaming){
 			if(mime.substr(0, 5) === 'text/'){ //no texteditor for now
 				return;
 			}
@@ -183,10 +221,51 @@ $(document).ready(function() {
 				action(filename);
 			}
 		}
-
-		// event handlers for breadcrumb items
-		$('#controls').delegate('.crumb:not(.home) a', 'click', onClickBreadcrumb);
 	});
+
+	/**
+	 * Override crumb URL maker (hacky!)
+	 */
+	FileList.breadcrumb.getCrumbUrl = function(part, index) {
+		if (index === 0) {
+			return OC.linkTo('files', 'index.php');
+		}
+		return OC.linkTo('files_trashbin', 'index.php')+"?dir=" + encodeURIComponent(part.dir);
+	};
+
+	Files.getDownloadUrl = function(action, params) {
+		// no downloads
+		return '#';
+	};
+
+	Files.getAjaxUrl = function(action, params) {
+		var q = '';
+		if (params) {
+			q = '?' + OC.buildQueryString(params);
+		}
+		return OC.filePath('files_trashbin', 'ajax', action + '.php') + q;
+	};
+
+
+	/**
+	 * Override crumb making to add "Deleted Files" entry
+	 * and convert files with ".d" extensions to a more
+	 * user friendly name.
+	 */
+	var oldMakeCrumbs = BreadCrumb.prototype._makeCrumbs;
+	BreadCrumb.prototype._makeCrumbs = function() {
+		var parts = oldMakeCrumbs.apply(this, arguments);
+		// duplicate first part
+		parts.unshift(parts[0]);
+		parts[1] = {
+			dir: '/',
+			name: t('files_trashbin', 'Deleted Files')
+		};
+		for (var i = 2; i < parts.length; i++) {
+			parts[i].name = getDeletedFileName(parts[i].name);
+		}
+		return parts;
+	};
 
 	FileActions.actions.dir = {
 		// only keep 'Open' action for navigation
@@ -221,10 +300,6 @@ function getSelectedFiles(property){
 		}
 	});
 	return files;
-}
-
-function fileDownloadPath(dir, file) {
-	return OC.filePath('files_trashbin', '', 'download.php') + '?file='+encodeURIComponent(file);
 }
 
 function enableActions() {

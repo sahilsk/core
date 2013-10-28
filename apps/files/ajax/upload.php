@@ -20,6 +20,10 @@ if (empty($_POST['dirToken'])) {
 		die();
 	}
 } else {
+	// TODO: ideally this code should be in files_sharing/ajax/upload.php
+	// and the upload/file transfer code needs to be refactored into a utility method
+	// that could be used there
+
 	// return only read permissions for public upload
 	$allowedPermissions = OCP\PERMISSION_READ;
 
@@ -129,19 +133,19 @@ if (strpos($dir, '..') === false) {
 						$error = $l->t('The target folder has been moved or deleted.');
 						$errorCode = 'targetnotfound';
 					} else {
-						$result[] = array('status' => 'success',
-							'mime' => $meta['mimetype'],
-							'mtime' => $meta['mtime'],
-							'size' => $meta['size'],
-							'id' => $meta['fileid'],
-							'name' => basename($target),
-							'etag' => $meta['etag'],
-							'originalname' => $files['tmp_name'][$i],
-							'uploadMaxFilesize' => $maxUploadFileSize,
-							'maxHumanFilesize' => $maxHumanFileSize,
-							'permissions' => $meta['permissions'] & $allowedPermissions,
-							'directory' => \OC\Files\Filesystem::normalizePath(stripslashes($dir)),
-						);
+						$data = \OCA\Files\Helper::formatFileInfo($meta, $dir);
+						$data['permissions'] = $data['permissions'] & $allowedPermissions;
+						$data['status'] = 'success';
+						$data['originalname'] = $files['tmp_name'][$i];
+						$data['uploadMaxFilesize'] = $maxUploadFileSize;
+						$data['maxHumanFilesize'] = $maxHumanFileSize;
+						$data['permissions'] = $meta['permissions'] & $allowedPermissions;
+						$data['directory'] = \OC\Files\Filesystem::normalizePath(stripslashes($dir));
+						if ($data['isPreviewAvailable']) {
+							// force client side lazy load
+							$data['icon'] = null;
+						}
+						$result[] = $data;
 					}
 
 				} else {
@@ -157,19 +161,19 @@ if (strpos($dir, '..') === false) {
 			if ($meta === false) {
 				$error = $l->t('Upload failed. Could not get file info.');
 			} else {
-				$result[] = array('status' => 'existserror',
-					'mime' => $meta['mimetype'],
-					'mtime' => $meta['mtime'],
-					'size' => $meta['size'],
-					'id' => $meta['fileid'],
-					'name' => basename($target),
-					'etag' => $meta['etag'],
-					'originalname' => $files['tmp_name'][$i],
-					'uploadMaxFilesize' => $maxUploadFileSize,
-					'maxHumanFilesize' => $maxHumanFileSize,
-					'permissions' => $meta['permissions'] & $allowedPermissions,
-					'directory' => \OC\Files\Filesystem::normalizePath(stripslashes($dir)),
-				);
+				$data = \OCA\Files\Helper::formatFileInfo($meta, $dir);
+				$data['permissions'] = $data['permissions'] & $allowedPermissions;
+				$data['status'] = 'existserror';
+				$data['originalname'] = $files['tmp_name'][$i];
+				$data['uploadMaxFilesize'] = $maxUploadFileSize;
+				$data['maxHumanFilesize'] = $maxHumanFileSize;
+				$data['permissions'] = $meta['permissions'] & $allowedPermissions;
+				$data['directory'] = \OC\Files\Filesystem::normalizePath(stripslashes($dir));
+				if ($data['isPreviewAvailable']) {
+					// force client side lazy load
+					$data['icon'] = null;
+				}
+				$result[] = $data;
 			}
 		}
 	}

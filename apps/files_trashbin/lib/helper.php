@@ -45,6 +45,7 @@ class Helper
 
 		$files = array();
 		$id = 0;
+		$dirListing = true;
 		foreach ($result as $r) {
 			$i = array();
 			$i['id'] = $id++;
@@ -61,39 +62,25 @@ class Helper
 			$i['directory'] = $r['location'];
 			if ($i['directory'] === '/') {
 				$i['directory'] = '';
+				$dirListing = false;
 			}
 			$i['permissions'] = \OCP\PERMISSION_READ;
 			$i['isPreviewAvailable'] = \OC::$server->getPreviewManager()->isMimeSupported($r['mime']);
-			$i['icon'] = \OCA\Files\Helper::determineIcon($i);
+			if($i['isPreviewAvailable']) {
+				$pathForPreview = $i['directory'] . '/' . $i['name'];
+				if (!$dirListing) {
+					$pathForPreview .= '.d' . $i['timestamp'];
+				}
+				$i['icon'] = \OCA\Files_Trashbin\Trashbin::preview_icon($pathForPreview);
+			}
+			else {
+				$i['icon'] = \OCA\Files\Helper::determineIcon($i);
+			}
 			$files[] = $i;
 		}
 
 		usort($files, array('\OCA\Files\Helper', 'fileCmp'));
 
 		return $files;
-	}
-
-	/**
-	 * Splits the given path into a breadcrumb structure.
-	 * @param string $dir path to process
-	 * @return array where each entry is a hash of the absolute
-	 * directory path and its name
-	 */
-	public static function makeBreadcrumb($dir){
-		// Make breadcrumb
-		$pathtohere = '';
-		$breadcrumb = array();
-		foreach (explode('/', $dir) as $i) {
-			if ($i !== '') {
-				if ( preg_match('/^(.+)\.d[0-9]+$/', $i, $match) ) {
-					$name = $match[1];
-				} else {
-					$name = $i;
-				}
-				$pathtohere .= '/' . $i;
-				$breadcrumb[] = array('dir' => $pathtohere, 'name' => $name);
-			}
-		}
-		return $breadcrumb;
 	}
 }
