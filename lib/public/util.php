@@ -457,4 +457,13 @@ class Util {
 	public static function maxUploadFilesize($dir) {
 		return \OC_Helper::maxUploadFilesize($dir);
 	}
+
+	/**
+	 * Returns whether the given file name is valid
+	 * @param $file string file name to check
+	 * @return bool true if the file name is valid, false otherwise
+	 */
+	public static function isValidFileName($file) {
+		return \OC_Util::isValidFileName($file);
+	}
 }

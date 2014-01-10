@@ -68,8 +68,8 @@ Files={
 	},
 
 	isFileNameValid:function (name) {
-		if (name === '.') {
-			throw t('files', '\'.\' is an invalid file name.');
+		if (name === '.' || name === '..') {
+			throw t('files', '"{name}" is an invalid file name.', {name: name});
 		} else if (name.length === 0) {
 			throw t('files', 'File name cannot be empty.');
 		}
