@@ -71,7 +71,7 @@ tr:hover>td.remove>a { float:right; }
 li.selected { background-color:#ddd; }
 #rightcontent { padding-left: 10px; }
 div.quota {
-	float: right;
+	margin: 10px;
 	display: block;
 }
 div.quota-select-wrapper { position: relative; }
