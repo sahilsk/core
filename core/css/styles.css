@@ -230,7 +230,7 @@ input[type="submit"].enabled {
 	box-sizing: border-box;
 	position: fixed;
 	right: 0;
-	left:380px;
+	left:0;
 	height: 44px;
 	width: 100%;
 	padding: 0;
@@ -241,6 +241,9 @@ input[type="submit"].enabled {
 }
 /* account for shift of controls bar due to app navigation */
 #body-user #controls,
+#body-settings #controls {
+	padding-left: 80px;
+}
 #controls .button,
 #controls button,
 #controls input[type='submit'],
