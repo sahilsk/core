@@ -116,12 +116,6 @@ var FileActions = {
 					actionText = t('files', name),
 					actionContainer = 'a.name>span.fileactions';
 
-				if (name === 'Rename') {
-					// rename has only an icon which appears behind
-					// the file name
-					actionText = '';
-					actionContainer = 'a.name span.nametext';
-				}
 				if (img.call) {
 					img = img(file);
 				}
@@ -129,13 +123,29 @@ var FileActions = {
 				if (img) {
 					html += '<img class ="svg" src="' + img + '" />';
 				}
-				html += '<span> ' + actionText + '</span></a>';
 
+				if (name === 'Rename') {
+					// rename has only an icon which appears behind
+					// the file name
+					actionText = '';
+					actionContainer = 'a.name span.nametext';
+				} else if (name === 'Download') {
+					// the Download button goes
+					// to the filesize column.
+					actionText = '';
+					actionContainer = 'td.filesize span';
+				} else {
+					html += '<span> ' + actionText + '</span></a>';
+				}
 				var element = $(html);
 				element.data('action', name);
 				//alert(element);
 				element.on('click', {a: null, elem: parent, actionFunc: actions[name]}, actionHandler);
-				parent.find(actionContainer).append(element);
+				if (name === 'Download') {
+					parent.parent().find(actionContainer).append(element);
+				} else {
+					parent.find(actionContainer).append(element);
+				}
 			}
 
 		};

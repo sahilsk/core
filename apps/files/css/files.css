@@ -111,10 +111,11 @@ table th#headerName {
 	height: 50px;
 }
 table th#headerSize, table td.filesize {
-	min-width: 48px;
-	padding: 0 16px;
-	text-align: right;
+	min-width: 60px;
+	padding: 0 2px;
+	text-align: left;
 }
+
 table th#headerDate, table td.date {
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
@@ -174,7 +175,7 @@ table td.filename .nametext, .uploadtext, .modified { float:left; padding:14px 0
 	position: absolute;
 	top: 15px;
 }
-.modified {
+table th#headerSize, table td.filesize span, .modified {
 	position: relative;
 	padding-left: 8px;
 	overflow: hidden;
@@ -312,6 +313,18 @@ a.action>img { max-height:16px; max-width:16px; vertical-align:text-bottom; }
 #fileList a.action[data-action="Rename"] {
 	padding:18px 14px !important;
 }
+
+#fileList a.action[data-action="Download"] { 
+	width: 60px;
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	text-align: right;
+	display: block !important;
+	position: absolute;
+	top: -10px;
+	height: 50px;
+}
+
 #fileList tr:hover a.action, #fileList a.action.permanent {
 	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 	filter: alpha(opacity=50);
