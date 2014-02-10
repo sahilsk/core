@@ -220,19 +220,23 @@ class Test_Files_Sharing_Cache extends Test_Files_Sharing_Base {
 	}
 
 	/**
-	 * Checks that all provided attributes exist in the files list,
-	 * only the values provided in $examples will be used to check against
-	 * the file list. The files order also needs to be the same.
+	 * Check if 'results' contains the expected 'examples' only.
 	 *
 	 * @param array $examples array of example files
-	 * @param array $files array of files
+	 * @param array $results array of files
 	 */
-	private function verifyFiles($examples, $files) {
-		$this->assertEquals(count($examples), count($files));
-		foreach ($files as $i => $file) {
-			foreach ($examples[$i] as $key => $value) {
-				$this->assertEquals($value, $file[$key]);
+	private function verifyFiles($examples, $results) {
+		$this->assertEquals(count($examples), count($results));
+
+		foreach ($examples as $example) {
+			foreach ($results as $key => $result) {
+				if ($result['name'] === $example['name']) {
+					unset($results[$key]);
+					break;
+				}
 			}
 		}
+		$this->assertTrue(empty($results));
 	}
+
 }
