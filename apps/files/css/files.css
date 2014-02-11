@@ -110,10 +110,15 @@ table th#headerName {
 	position: relative;
 	height: 50px;
 }
+
+table th#headerSize {
+	padding-right:35px !important;
+}
+
 table th#headerSize, table td.filesize {
 	min-width: 60px;
-	padding: 0 2px;
-	text-align: left;
+	padding: 0 20px 0 0;
+	text-align: right;
 }
 
 table th#headerDate, table td.date {
@@ -178,9 +183,9 @@ table td.filename .nametext, .uploadtext, .modified { float:left; padding:14px 0
 table th#headerSize, table td.filesize span, .modified {
 	position: relative;
 	padding-left: 8px;
+	padding-right:15px;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	width: 90%;
 }
 /* ellipsize long modified dates to make room for showing delete button */
 #fileList tr:hover .modified,
@@ -315,14 +320,14 @@ a.action>img { max-height:16px; max-width:16px; vertical-align:text-bottom; }
 }
 
 #fileList a.action[data-action="Download"] { 
-	width: 60px;
+	width: 80px;
 	box-sizing: border-box;
 	-moz-box-sizing: border-box;
-	text-align: right;
 	display: block !important;
 	position: absolute;
 	top: -10px;
 	height: 50px;
+	right: -12px;
 }
 
 #fileList tr:hover a.action, #fileList a.action.permanent {
