@@ -23,6 +23,20 @@ $(document).ready(function() {
 		return (dir !== '/' && dir !== '');
 	}
 
+	function removeCallback(result) {
+		if (result.status !== 'success') {
+			OC.dialogs.alert(result.data.message, t('core', 'Error'));
+		}
+
+		var files = result.data.success;
+		for (var i = 0; i < files.length; i++) {
+			FileList.remove(OC.basename(files[i].filename), {updateSummary: false});
+		}
+		FileList.updateFileSummary();
+		FileList.updateEmptyContent();
+		enableActions();
+	}
+
 	if (typeof FileActions !== 'undefined') {
 		FileActions.register('all', 'Restore', OC.PERMISSION_READ, OC.imagePath('core', 'actions/history'), function(filename) {
 			var dirListing = isDirListing();
@@ -34,23 +48,8 @@ $(document).ready(function() {
 			$.post(OC.filePath('files_trashbin', 'ajax', 'undelete.php'), {
 					files: JSON.stringify([dir + '/' + filename]),
 					dirlisting: dirListing ? 1 : 0
-			},
-				function(result) {
-					var name;
-					for (var i = 0; i < result.data.success.length; i++) {
-						name = getDeletedFileName(result.data.success[i].filename);
-						if (!dirListing) {
-							name += '.d' + result.data.success[i].timestamp;
-						}
-						FileList.remove(name, {updateSummary: false});
-					}
-					if (result.status !== 'success') {
-						OC.dialogs.alert(result.data.message, t('core', 'Error'));
-					}
-					enableActions();
-					FileList.updateFileSummary();
-					FileList.updateEmptyContent();
-				}
+				},
+			    removeCallback
 			);
 
 		});
@@ -70,22 +69,7 @@ $(document).ready(function() {
 				files: JSON.stringify([dir + '/' + filename]),
 				dirlisting: dirListing ? 1 : 0
 			},
-			function(result) {
-				var name;
-				for (var i = 0; i < result.data.success.length; i++) {
-					name = getDeletedFileName(result.data.success[i].filename);
-					if (!dirListing) {
-						name += '.d' + result.data.success[i].timestamp;
-					}
-					FileList.remove(name, {updateSummary: false});
-				}
-				if (result.status !== 'success') {
-					OC.dialogs.alert(result.data.message, t('core', 'Error'));
-				}
-				enableActions();
-				FileList.updateFileSummary();
-				FileList.updateEmptyContent();
-			}
+			removeCallback
 		);
 
 	});
@@ -117,18 +101,7 @@ $(document).ready(function() {
 
 		$.post(OC.filePath('files_trashbin', 'ajax', 'undelete.php'),
 				{files: fileslist, dirlisting: dirlisting},
-				function(result) {
-					for (var i = 0; i < result.data.success.length; i++) {
-						var row = document.getElementById(result.data.success[i].filename);
-						row.parentNode.removeChild(row);
-					}
-					if (result.status !== 'success') {
-						OC.dialogs.alert(result.data.message, t('core', 'Error'));
-					}
-					enableActions();
-					FileList.updateFileSummary();
-					FileList.updateEmptyContent();
-				}
+				removeCallback
 		);
 	});
 
@@ -166,22 +139,17 @@ $(document).ready(function() {
 				params,
 				function(result) {
 					if (allFiles) {
+						if (result.status !== 'success') {
+							OC.dialogs.alert(result.data.message, t('core', 'Error'));
+						}
 						FileList.hideMask();
 						// simply remove all files
-						$('#fileList').empty();
+						FileList.setFiles([]);
+						enableActions();
 					}
 					else {
-						for (var i = 0; i < result.data.success.length; i++) {
-							var row = document.getElementById(result.data.success[i].filename);
-							row.parentNode.removeChild(row);
-						}
+						removeCallback(result);
 					}
-					if (result.status !== 'success') {
-						OC.dialogs.alert(result.data.message, t('core', 'Error'));
-					}
-					enableActions();
-					FileList.updateFileSummary();
-					FileList.updateEmptyContent();
 				}
 		);
 
