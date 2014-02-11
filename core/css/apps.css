@@ -239,3 +239,12 @@ button.loading {
 	padding-right: 30px;
 }
 
+.appear {
+	opacity: 1;
+	transition: opacity 500ms ease 0s;
+	-webkit-transition: opacity 500ms ease 0s;
+}
+.appear.transparent {
+	opacity: 0;
+}
+
