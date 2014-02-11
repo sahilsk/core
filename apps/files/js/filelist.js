@@ -8,7 +8,7 @@
  *
  */
 
-/* global OC, t, n, FileList, FileActions, Files, BreadCrumb */
+/* global OC, t, n, FileList, FileActions, Files, FileSummary, BreadCrumb */
 /* global procesSelection, dragOptions, SVGSupport, replaceSVG */
 window.FileList = {
 	isEmpty: true,
@@ -16,6 +16,11 @@ window.FileList = {
 	$el: $('#filestable'),
 	$fileList: $('#fileList'),
 	breadcrumb: null,
+
+	/**
+	 * Instance of FileSummary
+	 */
+	fileSummary: null,
 	initialized: false,
 
 	// number of files per page
@@ -36,6 +41,9 @@ window.FileList = {
 		// TODO: FileList should not know about global elements
 		this.$el = $('#filestable');
 		this.$fileList = $('#fileList');
+
+		
+		this.fileSummary = this._createSummary();
 
 		this.breadcrumb = new BreadCrumb({
 			onClick: this._onClickBreadCrumb,
@@ -72,7 +80,7 @@ window.FileList = {
 			return;
 		}
 		var target = $('body').get(0); // FIXME: use html in firefox
-		if (target.scrollTop + target.offsetHeight > target.scrollHeight - 100) {
+		if (target.scrollTop + target.offsetHeight > target.scrollHeight - 20) {
 			this._nextPage(true);
 		}
 	},
@@ -186,7 +194,9 @@ window.FileList = {
 		if (window.Files) {
 			Files.setupDragAndDrop();
 		}
-		this.updateFileSummary();
+
+		this.fileSummary.calculate(filesArray);
+
 		procesSelection();
 		$(window).scrollTop(0);
 
@@ -360,7 +370,7 @@ window.FileList = {
 
 		// defaults to true if not defined
 		if (typeof(options.updateSummary) === 'undefined' || !!options.updateSummary) {
-			this.updateFileSummary();
+			this.fileSummary.add(fileData);
 			this.updateEmptyContent();
 		}
 		return tr;
@@ -528,7 +538,7 @@ window.FileList = {
 		FileList.isEmpty = !this.$fileList.find('tr:not(.summary)').length;
 		if (typeof(options.updateSummary) === 'undefined' || !!options.updateSummary) {
 			FileList.updateEmptyContent();
-			FileList.updateFileSummary();
+			this.fileSummary.remove({type: fileEl.attr('data-type'), size: fileEl.attr('data-size')});
 		}
 		return fileEl;
 	},
@@ -564,7 +574,6 @@ window.FileList = {
 		}
 		FileList.isEmpty = false;
 		FileList.updateEmptyContent();
-		FileList.updateFileSummary();
 	},
 	rename: function(oldname) {
 		var tr, td, input, form;
@@ -743,11 +752,12 @@ window.FileList = {
 							// element isn't even in the DOM any more
 							fileEl.find('input[type="checkbox"]').removeAttr('checked');
 							fileEl.removeClass('selected');
+							FileList.fileSummary.remove({type: fileEl.attr('data-type'), size: fileEl.attr('data-size')});
 						});
 						procesSelection();
 						checkTrashStatus();
-						FileList.updateFileSummary();
 						FileList.updateEmptyContent();
+						FileList.fileSummary.update();
 						Files.updateStorageStatistics();
 					} else {
 						if (result.status === 'error' && result.data.message) {
@@ -767,109 +777,14 @@ window.FileList = {
 					}
 				});
 	},
-	createFileSummary: function() {
-		if ( !FileList.isEmpty ) {
-			var summary = this._calculateFileSummary();
+	/**
+	 * Creates the file summary section
+	 */
+	_createSummary: function() {
+		var $tr = $('<tr class="summary"></tr>');
+		this.$el.find('tfoot').append($tr);
 
-			// Get translations
-			var directoryInfo = n('files', '%n folder', '%n folders', summary.totalDirs);
-			var fileInfo = n('files', '%n file', '%n files', summary.totalFiles);
-
-			var infoVars = {
-				dirs: '<span class="dirinfo">'+directoryInfo+'</span><span class="connector">',
-				files: '</span><span class="fileinfo">'+fileInfo+'</span>'
-			};
-
-			var info = t('files', '{dirs} and {files}', infoVars);
-
-			// don't show the filesize column, if filesize is NaN (e.g. in trashbin)
-			if (isNaN(summary.totalSize)) {
-				var fileSize = '';
-			} else {
-				var fileSize = '<td class="filesize">'+humanFileSize(summary.totalSize)+'</td>';
-			}
-
-			var $summary = $('<tr class="summary" data-file="undefined"><td><span class="info">'+info+'</span></td>'+fileSize+'<td></td></tr>');
-			this.$fileList.append($summary);
-
-			var $dirInfo = $summary.find('.dirinfo');
-			var $fileInfo = $summary.find('.fileinfo');
-			var $connector = $summary.find('.connector');
-
-			// Show only what's necessary, e.g.: no files: don't show "0 files"
-			if (summary.totalDirs === 0) {
-				$dirInfo.addClass('hidden');
-				$connector.addClass('hidden');
-			}
-			if (summary.totalFiles === 0) {
-				$fileInfo.addClass('hidden');
-				$connector.addClass('hidden');
-			}
-		}
-	},
-	_calculateFileSummary: function() {
-		var result = {
-			totalDirs: 0,
-			totalFiles: 0,
-			totalSize: 0
-		};
-		$.each($('tr[data-file]'), function(index, value) {
-			var $value = $(value);
-			if ($value.data('type') === 'dir') {
-				result.totalDirs++;
-			} else if ($value.data('type') === 'file') {
-				result.totalFiles++;
-			}
-			if ($value.data('size') !== undefined && $value.data('id') !== -1) {
-				//Skip shared as it does not count toward quota
-				result.totalSize += parseInt($value.data('size'));
-			}
-		});
-		return result;
-	},
-	updateFileSummary: function() {
-		var $summary = this.$el.find('.summary');
-
-		// always make it the last element
-		this.$fileList.append($summary.detach());
-
-		// Check if we should remove the summary to show "Upload something"
-		if (this.isEmpty && $summary.length === 1) {
-			$summary.remove();
-		}
-		// If there's no summary create one (createFileSummary checks if there's data)
-		else if ($summary.length === 0) {
-			FileList.createFileSummary();
-		}
-		// There's a summary and data -> Update the summary
-		else if (!this.isEmpty && $summary.length === 1) {
-			var fileSummary = this._calculateFileSummary();
-			var $dirInfo = $('.summary .dirinfo');
-			var $fileInfo = $('.summary .fileinfo');
-			var $connector = $('.summary .connector');
-
-			// Substitute old content with new translations
-			$dirInfo.html(n('files', '%n folder', '%n folders', fileSummary.totalDirs));
-			$fileInfo.html(n('files', '%n file', '%n files', fileSummary.totalFiles));
-			$('.summary .filesize').html(humanFileSize(fileSummary.totalSize));
-
-			// Show only what's necessary (may be hidden)
-			if (fileSummary.totalDirs === 0) {
-				$dirInfo.addClass('hidden');
-				$connector.addClass('hidden');
-			} else {
-				$dirInfo.removeClass('hidden');
-			}
-			if (fileSummary.totalFiles === 0) {
-				$fileInfo.addClass('hidden');
-				$connector.addClass('hidden');
-			} else {
-				$fileInfo.removeClass('hidden');
-			}
-			if (fileSummary.totalDirs > 0 && fileSummary.totalFiles > 0) {
-				$connector.removeClass('hidden');
-			}
-		}
+		return new FileSummary($tr);
 	},
 	updateEmptyContent: function() {
 		var $fileList = $('#fileList');
@@ -1198,7 +1113,5 @@ $(document).ready(function() {
 		// set dir initially
 		FileList.breadcrumb.setDirectory(dir);
 	}, 0);
-
-	FileList.createFileSummary();
 });
 

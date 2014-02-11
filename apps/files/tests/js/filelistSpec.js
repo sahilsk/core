@@ -229,7 +229,7 @@ describe('FileList tests', function() {
 			var $tr = FileList.add(fileData);
 			expect($tr.find('.filesize').text()).toEqual('0 B');
 		});
-		it('adds new file to the end of the list before the summary', function() {
+		it('adds new file to the end of the list', function() {
 			var fileData = {
 				type: 'file',
 				name: 'P comes after O.txt'
@@ -237,7 +237,6 @@ describe('FileList tests', function() {
 			FileList.setFiles(testFiles);
 			$tr = FileList.add(fileData);
 			expect($tr.index()).toEqual(4);
-			expect($tr.next().hasClass('summary')).toEqual(true);
 		});
 		it('adds new file at correct position in insert mode', function() {
 			var fileData = {
@@ -259,7 +258,7 @@ describe('FileList tests', function() {
 			expect(FileList.isEmpty).toEqual(true);
 			FileList.add(fileData);
 			$summary = $('#fileList .summary');
-			expect($summary.length).toEqual(1);
+			expect($summary.hasClass('hidden')).toEqual(false);
 			// yes, ugly...
 			expect($summary.find('.info').text()).toEqual('0 folders and 1 file');
 			expect($summary.find('.dirinfo').hasClass('hidden')).toEqual(true);
@@ -281,7 +280,7 @@ describe('FileList tests', function() {
 			expect(FileList.findFileEl('One.txt').length).toEqual(0);
 
 			$summary = $('#fileList .summary');
-			expect($summary.length).toEqual(1);
+			expect($summary.hasClass('hidden')).toEqual(false);
 			expect($summary.find('.info').text()).toEqual('1 folder and 2 files');
 			expect($summary.find('.dirinfo').hasClass('hidden')).toEqual(false);
 			expect($summary.find('.fileinfo').hasClass('hidden')).toEqual(false);
@@ -295,7 +294,7 @@ describe('FileList tests', function() {
 			expect(FileList.findFileEl('One.txt').length).toEqual(0);
 
 			$summary = $('#fileList .summary');
-			expect($summary.length).toEqual(0);
+			expect($summary.hasClass('hidden')).toEqual(true);
 			expect($('#filestable thead th').hasClass('hidden')).toEqual(true);
 			expect($('#emptycontent').hasClass('hidden')).toEqual(false);
 			expect(FileList.isEmpty).toEqual(true);
@@ -330,7 +329,7 @@ describe('FileList tests', function() {
 			expect(FileList.$fileList.find('tr:not(.summary)').length).toEqual(2);
 
 			$summary = $('#fileList .summary');
-			expect($summary.length).toEqual(1);
+			expect($summary.hasClass('hidden')).toEqual(false);
 			expect($summary.find('.info').text()).toEqual('1 folder and 1 file');
 			expect($summary.find('.dirinfo').hasClass('hidden')).toEqual(false);
 			expect($summary.find('.fileinfo').hasClass('hidden')).toEqual(false);
@@ -354,7 +353,7 @@ describe('FileList tests', function() {
 			expect(FileList.$fileList.find('tr:not(.summary)').length).toEqual(0);
 
 			$summary = $('#fileList .summary');
-			expect($summary.length).toEqual(0);
+			expect($summary.hasClass('hidden')).toEqual(true);
 			expect(FileList.isEmpty).toEqual(true);
 			expect($('#filestable thead th').hasClass('hidden')).toEqual(true);
 			expect($('#emptycontent').hasClass('hidden')).toEqual(false);
@@ -475,7 +474,7 @@ describe('FileList tests', function() {
 			var $summary;
 			FileList.setFiles(testFiles);
 			$summary = $('#fileList .summary');
-			expect($summary.length).toEqual(1);
+			expect($summary.hasClass('hidden')).toEqual(false);
 			expect($summary.find('.info').text()).toEqual('1 folder and 3 files');
 			expect($summary.find('.filesize').text()).toEqual('69 kB');
 		});
@@ -663,7 +662,7 @@ describe('FileList tests', function() {
 			var query = url.substr(url.indexOf('?') + 1);
 			expect(OC.parseQueryString(query)).toEqual({'dir': '/subdir'});
 			fakeServer.respond();
-			expect($('#fileList tr:not(.summary)').length).toEqual(4);
+			expect($('#fileList tr').length).toEqual(4);
 			expect(FileList.findFileEl('One.txt').length).toEqual(1);
 		});
 		it('switches dir and fetches file list when calling changeDirectory()', function() {
