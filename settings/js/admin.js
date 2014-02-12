@@ -34,4 +34,34 @@ $(document).ready(function(){
 	$('#security').change(function(){
 		$.post(OC.filePath('settings','ajax','setsecurity.php'), { enforceHTTPS: $('#forcessl').val() },function(){} );
 	});
+
+	$('#mail_settings').change(function(){
+		OC.msg.startSaving('#mail_settings .msg');
+		var post = $( "#mail_settings" ).serialize();
+		$.post( OC.filePath('settings','ajax','setmail_settings.php'), post, function(data){
+			OC.msg.finishedSaving('#mail_settings .msg', data);
+		});
+	});
 });
+
+OC.msg={
+	startSaving:function(selector){
+		$(selector)
+			.html( t('settings', 'Saving...') )
+			.removeClass('success')
+			.removeClass('error')
+			.stop(true, true)
+			.show();
+	},
+	finishedSaving:function(selector, data){
+		if( data.status === "success" ){
+			$(selector).html( data.data.message )
+				.addClass('success')
+				.stop(true, true)
+				.delay(3000)
+				.fadeOut(900);
+		}else{
+			$(selector).html( data.data.message ).addClass('error');
+		}
+	}
+};

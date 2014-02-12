@@ -11,6 +11,27 @@ $levelLabels = array(
 	$l->t( 'Errors and fatal issues' ),
 	$l->t( 'Fatal issues only' ),
 );
+
+$mail_smtpauthtype = array(
+	''	=> '',
+	'LOGIN'	=> $l->t('Login'),
+	'PLAIN'	=> $l->t('Plain'),
+	'NTLM'	=> $l->t('NT LAN Manager'),
+);
+
+$mail_smtpsecure = array(
+	'',
+	'ssl',
+	'tls',
+);
+
+$mail_smtpmode = array(
+	'sendmail',
+	'smtp',
+	'qmail',
+	'php',
+);
+
 ?>
 
 <?php
@@ -245,6 +266,94 @@ if (!$_['internetconnectionworking']) {
 					print_unescaped("</em>");
 				}
 				?>
+			</td>
+		</tr>
+	</table>
+</fieldset>
+
+<fieldset id="mail_settings" class="personalblock">
+	<h2><?php p($l->t('Email Settings'));?> <span class="msg"></span></h2>
+
+	<table class="grid" width="100%">
+		<tr>
+			<td width="20%"><label for="mail_domain"><?php p($l->t( 'Email domain' )); ?></label></td>
+			<td width="30%">
+				<input type="text" name='mail_domain' id="mail_domain" placeholder="<?php p($l->t('example.com'))?>"
+					value='<?php p($_['mail_domain']) ?>' />
+			</td>
+			<td width="20%"><label for="mail_from_address"><?php p($l->t( 'From address' )); ?></label></td>
+			<td width="30%">
+				<input type="text" name='mail_from_address' id="mail_from_address" placeholder="<?php p($l->t('owncloud'))?>"
+					value='<?php p($_['mail_from_address']) ?>' original-title="Without domain" />
+			</td>
+		</tr>
+		<tr>
+			<td><label for="mail_smtpmode"><?php p($l->t( 'SMTP mode' )); ?></label></td>
+			<td>
+				<select name='mail_smtpmode' id='mail_smtpmode'>
+				<?php foreach ($mail_smtpmode as $smtpmode):
+					$selected = '';
+					if ($smtpmode == $_['mail_smtpmode']):
+						$selected = 'selected="selected"';
+					endif; ?>
+						<option value='<?php p($smtpmode)?>' <?php p($selected) ?>><?php p($smtpmode) ?></option>
+				<?php endforeach;?>
+				</select>
+			</td>
+			<td><label for="mail_smtpsecure"><?php p($l->t( 'Secure SMTP' )); ?></label></td>
+			<td>
+				<select name='mail_smtpsecure' id='mail_smtpsecure'>
+				<?php foreach ($mail_smtpsecure as $secure):
+					$selected = '';
+					if ($secure == $_['mail_smtpsecure']):
+						$selected = 'selected="selected"';
+					endif; ?>
+						<option value='<?php p($secure)?>' <?php p($selected) ?>><?php p(strtoupper($secure)) ?></option>
+				<?php endforeach;?>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td><label for="mail_smtphost"><?php p($l->t( 'SMTP server address' )); ?></label></td>
+			<td>
+				<input type="text" name='mail_smtphost' id="mail_smtphost" placeholder="<?php p($l->t('SMTP server address'))?>"
+					value='<?php p($_['mail_smtphost']) ?>' />
+			</td>
+			<td><label for="mail_smtpport"><?php p($l->t( 'SMTP server port' )); ?></label></td>
+			<td>
+				<input type="text" name='mail_smtpport' id="mail_smtpport" placeholder="<?php p($l->t('SMTP server port'))?>"
+					value='<?php p($_['mail_smtpport']) ?>' />
+			</td>
+		</tr>
+		<tr>
+			<td><label for="mail_smtpauthtype"><?php p($l->t( 'Authentification method for SMTP' )); ?> </label></td>
+			<td>
+				<select name='mail_smtpauthtype' id='mail_smtpauthtype'>
+				<?php foreach ($mail_smtpauthtype as $authtype => $name):
+					$selected = '';
+					if ($authtype == $_['mail_smtpauthtype']):
+						$selected = 'selected="selected"';
+					endif; ?>
+						<option value='<?php p($authtype)?>' <?php p($selected) ?>><?php p($name) ?></option>
+				<?php endforeach;?>
+				</select>
+			</td>
+			<td width="20%"><label for="mail_smtpauth"><?php p($l->t( 'Authentication required' )); ?></label></td>
+			<td width="30%">
+				<input type="checkbox" name="mail_smtpauth" id="mail_smtpauth"
+						value="1" <?php if ($_['mail_smtpauth']) print_unescaped('checked="checked"'); ?> />
+			</td>
+		</tr>
+		<tr>
+			<td><label for="mail_smtpname"><?php p($l->t( 'SMTP username' )); ?></label></td>
+			<td>
+				<input type="text" name='mail_smtpname' id="mail_smtpname" placeholder="<?php p($l->t('SMTP username'))?>"
+					value='<?php p($_['mail_smtpname']) ?>' />
+			</td>
+			<td><label for="mail_smtppassword"><?php p($l->t( 'SMTP password' )); ?></label></td>
+			<td>
+				<input type="password" name='mail_smtppassword' id="mail_smtppassword" placeholder="<?php p($l->t('SMTP password'))?>"
+					value='<?php p($_['mail_smtppassword']) ?>' />
 			</td>
 		</tr>
 	</table>
