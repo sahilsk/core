@@ -18,22 +18,6 @@ $(document).ready(function() {
 		return name;
 	}
 
-	function removeCallback(result) {
-		if (result.status !== 'success') {
-			OC.dialogs.alert(result.data.message, t('core', 'Error'));
-		}
-
-		var files = result.data.success;
-		var $el;
-		for (var i = 0; i < files.length; i++) {
-			$el = FileList.remove(OC.basename(files[i].filename), {updateSummary: false});
-			FileList.fileSummary.remove({type: $el.attr('data-type'), size: $el.attr('data-size')});
-		}
-		FileList.fileSummary.update();
-		FileList.updateEmptyContent();
-		enableActions();
-	}
-
 	if (typeof FileActions !== 'undefined') {
 		FileActions.register('all', 'Restore', OC.PERMISSION_READ, OC.imagePath('core', 'actions/history'), function(filename) {
 			var tr = FileList.findFileEl(filename);
@@ -44,7 +28,7 @@ $(document).ready(function() {
 					files: JSON.stringify([filename]),
 					dir: FileList.getCurrentDirectory()
 				},
-			    removeCallback
+			    FileList._removeCallback
 			);
 		});
 	};
@@ -61,124 +45,8 @@ $(document).ready(function() {
 				files: JSON.stringify([filename]),
 				dir: FileList.getCurrentDirectory()
 			},
-			removeCallback
+			FileList._removeCallback
 		);
-	});
-
-	// Sets the select_all checkbox behaviour :
-	$('#select_all').click(function() {
-		if ($(this).attr('checked')) {
-			// Check all
-			$('td.filename input:checkbox').attr('checked', true);
-			$('td.filename input:checkbox').parent().parent().addClass('selected');
-		} else {
-			// Uncheck all
-			$('td.filename input:checkbox').attr('checked', false);
-			$('td.filename input:checkbox').parent().parent().removeClass('selected');
-		}
-		procesSelection();
-	});
-	$('.undelete').click('click', function(event) {
-		event.preventDefault();
-		var files = Files.getSelectedFiles('name');
-		disableActions();
-		for (var i = 0; i < files.length; i++) {
-			var deleteAction = FileList.findFileEl(files[i]).children("td.date").children(".action.delete");
-			deleteAction.removeClass('delete-icon').addClass('progress-icon');
-		}
-
-		$.post(OC.filePath('files_trashbin', 'ajax', 'undelete.php'), {
-				files: JSON.stringify(files),
-				dir: FileList.getCurrentDirectory()
-			},
-			removeCallback
-		);
-	});
-
-	$('.delete').click('click', function(event) {
-		event.preventDefault();
-		var allFiles = $('#select_all').is(':checked');
-		var files = [];
-		var params = {};
-		if (allFiles) {
-			params = {
-				allfiles: true,
-				dir: FileList.getCurrentDirectory()
-			};
-		}
-		else {
-			files = Files.getSelectedFiles('name');
-			params = {
-				files: JSON.stringify(files),
-				dir: FileList.getCurrentDirectory()
-			};
-		}
-
-		disableActions();
-		if (allFiles) {
-			FileList.showMask();
-		}
-		else {
-			for (var i = 0; i < files.length; i++) {
-				var deleteAction = FileList.findFileEl(files[i]).children("td.date").children(".action.delete");
-				deleteAction.removeClass('delete-icon').addClass('progress-icon');
-			}
-		}
-
-		$.post(OC.filePath('files_trashbin', 'ajax', 'delete.php'),
-				params,
-				function(result) {
-					if (allFiles) {
-						if (result.status !== 'success') {
-							OC.dialogs.alert(result.data.message, t('core', 'Error'));
-						}
-						FileList.hideMask();
-						// simply remove all files
-						FileList.setFiles([]);
-						enableActions();
-					}
-					else {
-						removeCallback(result);
-					}
-				}
-		);
-
-	});
-
-	$('#fileList').on('click', 'td.filename input', function() {
-		var checkbox = $(this).parent().children('input:checkbox');
-		$(checkbox).parent().parent().toggleClass('selected');
-		if ($(checkbox).is(':checked')) {
-			var selectedCount = $('td.filename input:checkbox:checked').length;
-			if (selectedCount === $('td.filename input:checkbox').length) {
-				$('#select_all').prop('checked', true);
-			}
-		} else {
-			$('#select_all').prop('checked',false);
-		}
-		procesSelection();
-	});
-
-	$('#fileList').on('click', 'td.filename a', function(event) {
-		var mime = $(this).parent().parent().data('mime');
-		if (mime !== 'httpd/unix-directory') {
-			event.preventDefault();
-		}
-		var filename = $(this).parent().parent().attr('data-file');
-		var tr = FileList.findFileEl(filename);
-		var renaming = tr.data('renaming');
-		if(!renaming){
-			if(mime.substr(0, 5) === 'text/'){ //no texteditor for now
-				return;
-			}
-			var type = $(this).parent().parent().data('type');
-			var permissions = $(this).parent().parent().data('permissions');
-			var action = FileActions.getDefault(mime, type, permissions);
-			if(action){
-				event.preventDefault();
-				action(filename);
-			}
-		}
 	});
 
 	/**
