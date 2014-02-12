@@ -18,11 +18,6 @@ $(document).ready(function() {
 		return name;
 	}
 
-	function isDirListing() {
-		var dir = FileList.getCurrentDirectory();
-		return (dir !== '/' && dir !== '');
-	}
-
 	function removeCallback(result) {
 		if (result.status !== 'success') {
 			OC.dialogs.alert(result.data.message, t('core', 'Error'));
@@ -39,19 +34,16 @@ $(document).ready(function() {
 
 	if (typeof FileActions !== 'undefined') {
 		FileActions.register('all', 'Restore', OC.PERMISSION_READ, OC.imagePath('core', 'actions/history'), function(filename) {
-			var dirListing = isDirListing();
 			var tr = FileList.findFileEl(filename);
 			var deleteAction = tr.children("td.date").children(".action.delete");
-			var dir = FileList.getCurrentDirectory();
 			deleteAction.removeClass('delete-icon').addClass('progress-icon');
 			disableActions();
 			$.post(OC.filePath('files_trashbin', 'ajax', 'undelete.php'), {
-					files: JSON.stringify([dir + '/' + filename]),
-					dirlisting: dirListing ? 1 : 0
+					files: JSON.stringify([filename]),
+					dir: FileList.getCurrentDirectory()
 				},
 			    removeCallback
 			);
-
 		});
 	};
 
@@ -59,19 +51,16 @@ $(document).ready(function() {
 		return OC.imagePath('core', 'actions/delete');
 	}, function(filename) {
 		$('.tipsy').remove();
-		var dirListing = isDirListing();
 		var tr = FileList.findFileEl(filename);
 		var deleteAction = tr.children("td.date").children(".action.delete");
-		var dir = FileList.getCurrentDirectory();
 		deleteAction.removeClass('delete-icon').addClass('progress-icon');
 		disableActions();
 		$.post(OC.filePath('files_trashbin', 'ajax', 'delete.php'), {
-				files: JSON.stringify([dir + '/' + filename]),
-				dirlisting: dirListing ? 1 : 0
+				files: JSON.stringify([filename]),
+				dir: FileList.getCurrentDirectory()
 			},
 			removeCallback
 		);
-
 	});
 
 	// Sets the select_all checkbox behaviour :
@@ -87,21 +76,20 @@ $(document).ready(function() {
 		}
 		procesSelection();
 	});
-
 	$('.undelete').click('click', function(event) {
 		event.preventDefault();
-		var files = getSelectedFiles('file');
-		var fileslist = JSON.stringify(files);
-		var dirlisting = getSelectedFiles('dirlisting')[0];
+		var files = Files.getSelectedFiles('name');
 		disableActions();
 		for (var i = 0; i < files.length; i++) {
 			var deleteAction = FileList.findFileEl(files[i]).children("td.date").children(".action.delete");
 			deleteAction.removeClass('delete-icon').addClass('progress-icon');
 		}
 
-		$.post(OC.filePath('files_trashbin', 'ajax', 'undelete.php'),
-				{files: fileslist, dirlisting: dirlisting},
-				removeCallback
+		$.post(OC.filePath('files_trashbin', 'ajax', 'undelete.php'), {
+				files: JSON.stringify(files),
+				dir: FileList.getCurrentDirectory()
+			},
+			removeCallback
 		);
 	});
 
@@ -112,15 +100,15 @@ $(document).ready(function() {
 		var params = {};
 		if (allFiles) {
 			params = {
-			   allfiles: true,
-			   dir: $('#dir').val()
+				allfiles: true,
+				dir: FileList.getCurrentDirectory()
 			};
 		}
 		else {
-			files = getSelectedFiles('file');
+			files = Files.getSelectedFiles('name');
 			params = {
 				files: JSON.stringify(files),
-				dirlisting: getSelectedFiles('dirlisting')[0]
+				dir: FileList.getCurrentDirectory()
 			};
 		}
 
@@ -240,35 +228,6 @@ $(document).ready(function() {
 		'Open': FileActions.actions.dir.Open
 	};
 });
-
-/**
- * @brief get a list of selected files
- * @param string property (option) the property of the file requested
- * @return array
- *
- * possible values for property: name, mime, size and type
- * if property is set, an array with that property for each file is returnd
- * if it's ommited an array of objects with all properties is returned
- */
-function getSelectedFiles(property){
-	var elements=$('td.filename input:checkbox:checked').parent().parent();
-	var files=[];
-	elements.each(function(i,element){
-		var file={
-			name:$(element).attr('data-filename'),
-			file:$('#dir').val() + "/" + $(element).attr('data-file'),
-			timestamp:$(element).attr('data-timestamp'),
-			type:$(element).attr('data-type'),
-			dirlisting:$(element).attr('data-dirlisting')
-		};
-		if(property){
-			files.push(file[property]);
-		}else{
-			files.push(file);
-		}
-	});
-	return files;
-}
 
 function enableActions() {
 	$(".action").css("display", "inline");

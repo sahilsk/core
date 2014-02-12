@@ -313,7 +313,7 @@ $(document).ready(function() {
 	});
 
 	$('.download').click('click',function(event) {
-		var files=getSelectedFilesTrash('name');
+		var files = Files.getSelectedFiles('name');
 		var fileslist = JSON.stringify(files);
 		var dir=$('#dir').val()||'/';
 		OC.Notification.show(t('files','Your download is being prepared. This might take some time if the files are big.'));
@@ -328,7 +328,7 @@ $(document).ready(function() {
 	});
 
 	$('.delete-selected').click(function(event) {
-		var files=getSelectedFilesTrash('name');
+		var files = Files.getSelectedFiles('name');
 		event.preventDefault();
 		FileList.do_delete(files);
 		return false;
@@ -433,7 +433,7 @@ var createDragShadow = function(event) {
 		$(event.target).parents('tr').find('td input:first').prop('checked',true);
 	}
 
-	var selectedFiles = getSelectedFilesTrash();
+	var selectedFiles = Files.getSelectedFiles();
 
 	if (!isDragSelected && selectedFiles.length === 1) {
 		//revert the selection
@@ -550,7 +550,7 @@ var folderDropOptions={
 };
 
 function procesSelection() {
-	var selected = getSelectedFilesTrash();
+	var selected = Files.getSelectedFiles();
 	var selectedFiles = selected.filter(function(el) {
 		return el.type==='file';
 	});
@@ -600,7 +600,7 @@ function procesSelection() {
  * if property is set, an array with that property for each file is returnd
  * if it's ommited an array of objects with all properties is returned
  */
-function getSelectedFilesTrash(property) {
+Files.getSelectedFiles = function(property) {
 	var elements=$('td.filename input:checkbox:checked').parent().parent();
 	var files=[];
 	elements.each(function(i,element) {
